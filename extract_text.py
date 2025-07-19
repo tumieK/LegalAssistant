@@ -3,7 +3,7 @@ import os
 from PyPDF2 import PdfReader
 from chromadb import Client
 from chromadb.config import Settings
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from chromadb import PersistentClient
 
 # Setup ChromaDB with persistence

@@ -1,7 +1,7 @@
 from langchain.chains import ConversationalRetrievalChain
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_community.llms import HuggingFacePipeline
+from langchain_huggingface import HuggingFaceEmbeddings
 
 import transformers
 import torch
@@ -25,11 +25,7 @@ def load_rag_chain(hf_token: Optional[str] = None, persist_dir: str = "./chroma_
 
         # Initialize sentence-transformers embeddings
         logger.info("Initializing embeddings...")
-        embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2",
-            model_kwargs={"device": "cpu"},
-            encode_kwargs={"normalize_embeddings": True},
-        )
+        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
         # Load vector store
         logger.info("Loading Chroma vector store...")
@@ -44,21 +40,24 @@ def load_rag_chain(hf_token: Optional[str] = None, persist_dir: str = "./chroma_
         logger.info("Initializing local Transformers pipeline...")
 
         model_id = "meta-llama/Meta-Llama-3.1-8B-Instruct"
-        tokenizer = transformers.AutoTokenizer.from_pretrained(model_id, token=hf_token)
+
+        tokenizer = transformers.AutoTokenizer.from_pretrained(model_id, use_auth_token=hf_token)
         model = transformers.AutoModelForCausalLM.from_pretrained(
             model_id,
-            torch_dtype=torch.bfloat16,
+            torch_dtype=torch.float32,
             device_map="auto",
-            token=hf_token
+            use_auth_token=hf_token
         )
 
         pipe = transformers.pipeline(
             "text-generation",
             model=model,
             tokenizer=tokenizer,
-            max_new_tokens=1024,
-            temperature=0.3,
-            device_map="auto"
+            max_new_tokens=256,
+            temperature=0.7,
+            do_sample=True,
+            pad_token_id=tokenizer.eos_token_id
+           # device_map="auto"
         )
 
         llm = HuggingFacePipeline(pipeline=pipe)
@@ -80,10 +79,23 @@ def load_rag_chain(hf_token: Optional[str] = None, persist_dir: str = "./chroma_
         logger.error(f"Failed to initialize RAG chain: {str(e)}")
         raise
 
+#Testing  function!
 if __name__ == "__main__":
     try:
-        rag_chain = load_rag_chain(hf_token="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")
-        result = rag_chain.invoke({"question": "What is a civil summons?", "chat_history": []})
+        hf_token = "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"  # Replace with your actual HF token
+        rag_chain = load_rag_chain(hf_token=hf_token)
+
+        # Test the chain with a question
+        chat_history = []
+        question = "What is the purpose of legal aid in eviction cases?"
+
+        result = rag_chain({"question": question, "chat_history": chat_history})
+
+        print("\nAnswer:")
         print(result["answer"])
-    except Exception as e:
-        print(f"Error: {str(e)}")
+
+        print("\nSource Documents:")
+        for doc in result["source_documents"]:
+            print(f"- {doc.metadata.get('source', 'No source')}")
+    except Exception as err:
+        print(f"Error running RAG chain: {err}")

@@ -1,44 +1,101 @@
-import streamlit as st
-from dotenv import load_dotenv
-import os
-from pipeline_setup import load_rag_chain
+import streamlit as st  # type: ignore
+import json
+import re
+from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+import torch
 
-# Load environment variables from .env
-load_dotenv()
+# === Hugging Face Settings ===
+HF_TOKEN = "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"
+MODEL_ID = "meta-llama/Meta-Llama-3.1-8B-Instruct"
 
-st.set_page_config(page_title="SA Legal Assistant", page_icon="⚖️")
-st.title("🇿🇦 South African Legal Assistant ⚖️")
+# === Chat History Persistence ===
+HISTORY_FILE = "legal_chat_history.json"
 
+# === Load and Cache the LLM pipeline ===
 @st.cache_resource
-def get_chain():
-    hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
-    if not hf_token:
-        st.error("❌ HUGGINGFACEHUB_API_TOKEN is missing. Please set it in your .env file.")
-        st.stop()
-    return load_rag_chain(hf_token=hf_token)
+def load_model():
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, token=HF_TOKEN)
+    model = AutoModelForCausalLM.from_pretrained(
+        MODEL_ID,
+        token=HF_TOKEN,
+        torch_dtype=torch.float32,
+        device_map="auto"
+    )
+    return pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=512)
 
-rag_chain = get_chain()
+pipe = load_model()
 
-# Session state to hold history
+# === Text Formatting ===
+def format_text(text):
+    text = text.replace('**', '\n ')
+    text = text.capitalize()
+    text = re.sub(r'([.!?])\s*(\w)', lambda m: m.group(1) + m.group(2).upper(), text)
+    return text
+
+# === Chat History I/O ===
+def load_chat_history():
+    try:
+        with open(HISTORY_FILE, "r") as file:
+            return json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+def save_chat_history(history):
+    with open(HISTORY_FILE, "w") as file:
+        json.dump(history, file, indent=4)
+
+# === LLM Response ===
+def get_bot_response(message: str) -> str:
+    prompt = (
+        "You are LegalBot, an AI legal assistant helping disadvantaged individuals understand eviction law, family law, "
+        "and other legal topics in South Africa.\n"
+        f"User: {message}\nLegalBot:"
+    )
+    try:
+        response = pipe(prompt)
+        return response[0]["generated_text"].split("LegalBot:")[-1].strip()
+    except Exception as e:
+        return f"Sorry, something went wrong: {e}"
+
+# === Streamlit UI ===
+st.set_page_config(page_title="Legal Assistant Chatbot", page_icon="⚖️")
+st.title("⚖️ Legal Assistant Chatbot")
+
+# Initialize session state
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+    st.session_state.chat_history = load_chat_history()
 
-# Input box
-user_input = st.text_input("Ask a legal question:", key="user_input")
+if "current_session" not in st.session_state:
+    st.session_state.current_session = "Session 1"
+    st.session_state.chat_history.setdefault("Session 1", [])
 
-if st.button("Submit") and user_input:
-    with st.spinner("Thinking..."):
-        result = rag_chain.invoke({
-            "question": user_input,
-            "chat_history": st.session_state.chat_history
-        })
-        st.session_state.chat_history.append((user_input, result["answer"]))
-        st.markdown(f"**Answer:** {result['answer']}")
+# === Sidebar ===
+with st.sidebar:
+    st.header("🗂️ Chat Sessions")
+    session_names = list(st.session_state.chat_history.keys())
+    selected_session = st.selectbox("Choose a session", session_names, index=session_names.index(st.session_state.current_session))
 
-# Display chat history
-if st.session_state.chat_history:
-    st.divider()
-    st.subheader("Chat History")
-    for q, a in reversed(st.session_state.chat_history):
-        st.markdown(f"**You:** {q}")
-        st.markdown(f"**Assistant:** {a}")
+    if selected_session != st.session_state.current_session:
+        st.session_state.current_session = selected_session
+
+    if st.button("➕ New Session"):
+        new_name = f"Session {len(st.session_state.chat_history) + 1}"
+        st.session_state.chat_history[new_name] = []
+        st.session_state.current_session = new_name
+
+# === Display Chat History ===
+for msg in st.session_state.chat_history[st.session_state.current_session]:
+    role = msg["role"]
+    if role == "You":
+        st.markdown(f"**🧑 You:** {msg['content']}")
+    else:
+        st.markdown(f"**🤖 LegalBot:** {format_text(msg['content'])}")
+
+# === Input ===
+user_input = st.text_input("Ask a legal question about eviction, custody, etc:")
+if st.button("Submit") and user_input.strip():
+    st.session_state.chat_history[st.session_state.current_session].append({"role": "You", "content": user_input})
+    response = get_bot_response(user_input)
+    st.session_state.chat_history[st.session_state.current_session].append({"role": "LegalBot", "content": response})
+    save_chat_history(st.session_state.chat_history)
+    st.rerun()

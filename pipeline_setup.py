@@ -8,6 +8,10 @@ import torch
 import os
 import logging
 from typing import Optional
+from dotenv import load_dotenv
+
+load_dotenv()
+HF_TOKEN = os.getenv("HF_TOKEN")
 
 def load_rag_chain(hf_token: Optional[str] = None, persist_dir: str = "./chroma_db") -> ConversationalRetrievalChain:
     """
@@ -18,8 +22,8 @@ def load_rag_chain(hf_token: Optional[str] = None, persist_dir: str = "./chroma_
 
     try:
         # Use local Hugging Face token for gated model access
-        if hf_token:
-            os.environ["HUGGINGFACE_HUB_TOKEN"] = hf_token
+        if HF_TOKEN:
+            os.environ["HUGGINGFACE_HUB_TOKEN"] = HF_TOKEN
         elif not os.environ.get("HUGGINGFACE_HUB_TOKEN"):
             raise ValueError("HUGGINGFACE_HUB_TOKEN must be provided.")
 
@@ -41,12 +45,12 @@ def load_rag_chain(hf_token: Optional[str] = None, persist_dir: str = "./chroma_
 
         model_id = "meta-llama/Meta-Llama-3.1-8B-Instruct"
 
-        tokenizer = transformers.AutoTokenizer.from_pretrained(model_id, use_auth_token=hf_token)
+        tokenizer = transformers.AutoTokenizer.from_pretrained(model_id, use_auth_token=HF_TOKEN)
         model = transformers.AutoModelForCausalLM.from_pretrained(
             model_id,
             torch_dtype=torch.float32,
             device_map="auto",
-            use_auth_token=hf_token
+            use_auth_token=HF_TOKEN
         )
 
         pipe = transformers.pipeline(
@@ -82,8 +86,8 @@ def load_rag_chain(hf_token: Optional[str] = None, persist_dir: str = "./chroma_
 #Testing  function!
 if __name__ == "__main__":
     try:
-        hf_token = "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"  # Replace with your actual HF token
-        rag_chain = load_rag_chain(hf_token=hf_token)
+        HF_TOKEN = HF_TOKEN
+        rag_chain = load_rag_chain(hf_token=HF_TOKEN)
 
         # Test the chain with a question
         chat_history = []

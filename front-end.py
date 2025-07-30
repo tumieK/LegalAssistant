@@ -5,7 +5,8 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 import torch
 
 # === Hugging Face Settings ===
-HF_TOKEN = "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"
+load_dotenv()
+HF_TOKEN = os.getenv("HF_TOKEN")
 MODEL_ID = "meta-llama/Meta-Llama-3.1-8B-Instruct"
 
 # === Chat History Persistence ===

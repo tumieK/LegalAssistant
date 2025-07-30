@@ -23,6 +23,18 @@
         {
             "role": "LegalBot",
             "content": "Sorry, an error occurred: Incorrect API key provided: hf_aqbRh*************************bQgt. You can find your API key at https://platform.openai.com/account/api-keys."
+        },
+        {
+            "role": "You",
+            "content": "hi"
+        },
+        {
+            "role": "You",
+            "content": "hi"
+        },
+        {
+            "role": "LegalBot",
+            "content": "Sorry, something went wrong: Tensor on device cpu is not on the expected device meta!"
         }
     ],
     "Session 2": [

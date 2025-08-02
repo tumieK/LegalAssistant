@@ -35,6 +35,18 @@
         {
             "role": "LegalBot",
             "content": "Sorry, something went wrong: Tensor on device cpu is not on the expected device meta!"
+        },
+        {
+            "role": "You",
+            "content": "Hello"
+        },
+        {
+            "role": "You",
+            "content": "Good morning"
+        },
+        {
+            "role": "LegalBot",
+            "content": "Sorry, something went wrong: Tensor on device cpu is not on the expected device meta!"
         }
     ],
     "Session 2": [

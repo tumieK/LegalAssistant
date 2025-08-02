@@ -1,7 +1,9 @@
 import streamlit as st  # type: ignore
 import json
+import os
 import re
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+from dotenv import load_dotenv
 import torch
 
 # === Hugging Face Settings ===

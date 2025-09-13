@@ -1,6 +1,7 @@
 from langchain.chains import ConversationalRetrievalChain
 from langchain_community.vectorstores import Chroma
-from langchain_community.llms import HuggingFacePipeline
+#from langchain_community.llms import HuggingFacePipeline
+from langchain_huggingface import HuggingFacePipeline
 from langchain_huggingface import HuggingFaceEmbeddings
 
 import transformers
@@ -45,12 +46,12 @@ def load_rag_chain(hf_token: Optional[str] = None, persist_dir: str = "./chroma_
 
         model_id = "meta-llama/Meta-Llama-3.1-8B-Instruct"
 
-        tokenizer = transformers.AutoTokenizer.from_pretrained(model_id, use_auth_token=HF_TOKEN)
+        tokenizer = transformers.AutoTokenizer.from_pretrained(model_id, token=HF_TOKEN)
         model = transformers.AutoModelForCausalLM.from_pretrained(
             model_id,
             torch_dtype=torch.float32,
             device_map="auto",
-            use_auth_token=HF_TOKEN
+            token=HF_TOKEN
         )
 
         pipe = transformers.pipeline(
@@ -93,7 +94,7 @@ if __name__ == "__main__":
         chat_history = []
         question = "What is the purpose of legal aid in eviction cases?"
 
-        result = rag_chain({"question": question, "chat_history": chat_history})
+        result = rag_chain.invoke({"question": question, "chat_history": chat_history})
 
         print("\nAnswer:")
         print(result["answer"])

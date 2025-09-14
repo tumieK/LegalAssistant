@@ -8,14 +8,11 @@
 import os
 import json
 import logging
-import sys
-import pysqlite3
 from typing import List, Tuple, Optional
 
 import streamlit as st
 from dotenv import load_dotenv
 from pypdf import PdfReader
-sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
 
 #------Imports LangChain + Chroma + OpenAI ----- #
 #----------------------------------------------- #

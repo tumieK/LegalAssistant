@@ -2,6 +2,16 @@ import streamlit as st
 from auth import login_user, register_user
 from rag_pipeline import get_hybrid_response  # your chatbot functions
 
+import sys
+
+# Patch sqlite to use pysqlite3
+try:
+    __import__('pysqlite3')
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except ImportError:
+    pass
+
+
 # --- Session state init ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False

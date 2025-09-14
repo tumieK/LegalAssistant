@@ -4,9 +4,9 @@ import certifi
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
-from langchain.chains import LLMChain
+from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
-from langchain_community.chat_models import ChatOpenAI
+
 
 # --- Load OpenAI key ---
 load_dotenv()
@@ -35,8 +35,8 @@ Summarize the following case text. Extract important legal definitions and expla
 {text}
 """
 prompt = PromptTemplate(input_variables=["text"], template=template)
-chain = LLMChain(llm=llm, prompt=prompt)
+chain = prompt | llm
+summary = chain.invoke({"text": case_text})
 
-# --- Run chain ---
-summary = chain.run(text=case_text)
 print(summary)
+

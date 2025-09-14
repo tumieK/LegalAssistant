@@ -1,11 +1,12 @@
 import requests
 import os
+import certifi
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain.chat_models import ChatOpenAI  # deprecated warning, see note below
+from langchain_community.chat_models import ChatOpenAI
 
 # --- Load OpenAI key ---
 load_dotenv()
@@ -14,8 +15,10 @@ if not OPENAI_API_KEY:
     raise RuntimeError("Set OPENAI_API_KEY in the environment.")
 
 # --- Fetch case text ---
+
+
 def fetch_case_text(url):
-    r = requests.get(url)
+    r = requests.get(url, verify=False)
     soup = BeautifulSoup(r.text, "html.parser")
     paragraphs = soup.find_all("p")
     return "\n".join([p.get_text() for p in paragraphs])

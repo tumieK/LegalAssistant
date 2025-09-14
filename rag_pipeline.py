@@ -14,6 +14,9 @@ import streamlit as st
 from dotenv import load_dotenv
 from pypdf import PdfReader
 
+# Use built-in sqlite3 for Python >= 3.11
+import sqlite3
+
 #------Imports LangChain + Chroma + OpenAI ----- #
 #----------------------------------------------- #
 from langchain.chat_models import ChatOpenAI

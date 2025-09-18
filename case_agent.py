@@ -5,9 +5,8 @@ import os
 from typing import List, Tuple
 from dotenv import load_dotenv
 
-from langchain.chat_models import ChatOpenAI
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import Chroma
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_chroma import Chroma
 
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -64,12 +63,14 @@ def _build_context_text(summaries, raw_chunks, max_chars=6000) -> str:
 def _call_llm(prompt_text: str) -> str:
     llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model_name=CHAT_MODEL, temperature=0.0)
     try:
-        # prefer predict if available
-        out = llm.predict(prompt_text)
+        out = llm.invoke(prompt_text)  # AIMessage
+        return out.content.strip()
     except Exception:
         out_obj = llm([{"role": "user", "content": prompt_text}])
-        out = getattr(out_obj, "content", str(out_obj))
-    return out
+        if hasattr(out_obj, "content"):
+            return out_obj.content.strip()
+        return str(out_obj)
+
 
 def _evaluator_check(question: str, draft_answer: str, sources: List[str]) -> Tuple[bool, str]:
     """

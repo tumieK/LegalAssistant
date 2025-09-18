@@ -11,9 +11,8 @@ from dotenv import load_dotenv
 from pypdf import PdfReader
 
 # Use same LangChain imports as your existing pipeline for compatibility
-from langchain.chat_models import ChatOpenAI
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import Chroma
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_chroma import Chroma
 
 load_dotenv()
 
@@ -51,21 +50,34 @@ def chunk_text_simple(text: str, max_chars: int = 2000) -> List[str]:
         parts.append(cur.strip())
     return parts
 
+# def summarize_text(text: str, llm: ChatOpenAI) -> str:
+#     # keep summary prompt concise; you may customize
+#     prompt = (
+#         "Summarize the legal case below in 180-300 words. Include: court (if present), year (if present), "
+#         "key legal issue(s), short statement of facts, decision/outcome, and 3-5 short definitions of key terms.\n\n"
+#         f"{text[:6000]}"  # limit token usage by passing the start of the doc; for long docs you can chunk pre-summarize
+#     )
+#     # ChatOpenAI as used in your environment supports .generate/call; use simple .predict or .__call__
+#     try:
+#         resp = llm.invoke(prompt)
+#     except Exception:
+#         # fallback to calling as function; compatibility across langchain versions
+#         obj = llm([{"role": "user", "content": prompt}])
+#         resp = getattr(obj, "content", str(obj))
+#     return resp.strip()
+
 def summarize_text(text: str, llm: ChatOpenAI) -> str:
-    # keep summary prompt concise; you may customize
     prompt = (
         "Summarize the legal case below in 180-300 words. Include: court (if present), year (if present), "
         "key legal issue(s), short statement of facts, decision/outcome, and 3-5 short definitions of key terms.\n\n"
-        f"{text[:6000]}"  # limit token usage by passing the start of the doc; for long docs you can chunk pre-summarize
+        f"{text[:6000]}"
     )
-    # ChatOpenAI as used in your environment supports .generate/call; use simple .predict or .__call__
     try:
-        resp = llm.predict(prompt)
-    except Exception:
-        # fallback to calling as function; compatibility across langchain versions
-        obj = llm([{"role": "user", "content": prompt}])
-        resp = getattr(obj, "content", str(obj))
-    return resp.strip()
+        resp = llm.invoke(prompt)   # returns AIMessage
+        return resp.content.strip()  # use .content, not .strip() directly
+    except Exception as e:
+        return f"[Summary generation failed: {e}]"
+
 
 def index_casefiles(case_dir: str = CASEFILES_DIR,
                     summary_dir: str = CASE_SUMMARY_DB,
@@ -111,8 +123,6 @@ def index_casefiles(case_dir: str = CASEFILES_DIR,
             logging.exception(f"Failed to index {fname}: {e}")
 
     # persist
-    raw_db.persist()
-    summary_db.persist()
     print("Indexing complete. Raw DB:", raw_dir, "Summary DB:", summary_dir)
 
 if __name__ == "__main__":

@@ -19,9 +19,8 @@ import sqlite3
 
 #------Imports LangChain + Chroma + OpenAI ----- #
 #----------------------------------------------- #
-from langchain.chat_models import ChatOpenAI
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import Chroma
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_chroma import Chroma
 from langchain.chains import ConversationalRetrievalChain
 
 # ---------- Config/ Environment Variables ---------- #

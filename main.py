@@ -1,154 +1,12 @@
-# import streamlit as st
-# from dotenv import load_dotenv
-
-# from rag_pipeline import get_hybrid_response  
-# from case_agent import get_casefile_response  
-# from merge_agent import get_merged_response  
-
-# load_dotenv()
-
-# # --- Page setup ---
-# st.set_page_config(page_title="AI Legal Assistant", page_icon="⚖️", layout="wide")
-
-# # --- Sidebar (login + options) ---
-# with st.sidebar:
-#     st.title("⚖️ Legal Assistant")
-#     st.markdown("AI-powered legal help (educational only).")
-
-#     # Session state defaults
-#     if "logged_in" not in st.session_state:
-#         st.session_state.logged_in = False
-#     if "username" not in st.session_state:
-#         st.session_state.username = ""
-
-#     # Login form (basic demo)
-#     if not st.session_state.logged_in:
-#         st.subheader("Login")
-#         username = st.text_input("Username")
-#         password = st.text_input("Password", type="password")
-
-#         if st.button("Login"):
-#             if username and password:  # simple check; replace with DB later
-#                 st.session_state.logged_in = True
-#                 st.session_state.username = username
-#                 st.success(f"Welcome, {username}!")
-#                 st.rerun()
-#             else:
-#                 st.error("Enter username and password.")
-#     else:
-#         st.success(f"Logged in as {st.session_state.username}")
-#         if st.button("Logout"):
-#             st.session_state.logged_in = False
-#             st.session_state.username = ""
-#             st.rerun()
-
-# # --- Main UI ---
-
-# if not st.session_state.logged_in:
-#     # Custom CSS for background + centered login box
-#     st.markdown(
-#         """
-#         <style>
-#         /* Full-page background */
-#         .stApp {
-#             background-image: url("file://C:/Users/CSI/LegalAssistant/images/background.jpg");
-#             background-size: cover;
-#             background-position: center;
-#             background-repeat: no-repeat;
-#         }
-#         /* Center container */
-#         .login-container {
-#             display: flex;
-#             justify-content: center;
-#             align-items: center;
-#             height: 90vh;
-#         }
-#         /* Login box styling */
-#         .login-box {
-#             background: rgba(255, 255, 255, 0.85);
-#             padding: 2rem;
-#             border-radius: 12px;
-#             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-#             width: 300px;
-#             text-align: center;
-#         }
-#         </style>
-#         """,
-#         unsafe_allow_html=True
-#     )
-
-#     # Login box
-#     st.markdown('<div class="login-container"><div class="login-box">', unsafe_allow_html=True)
-
-#     st.subheader("🔑 Login")
-#     username = st.text_input("Username (Main UI)")
-#     password = st.text_input("Password (Main UI)", type="password")
-
-#     if st.button("Login (Main UI)"):
-#         if username and password:
-#             st.session_state.logged_in = True
-#             st.session_state.username = username
-#             st.success(f"Welcome, {username}!")
-#             st.rerun()
-#         else:
-#             st.error("Enter username and password.")
-
-#     st.markdown("</div></div>", unsafe_allow_html=True)
-
-# # --- Chat UI (after login) ---
-# if st.session_state.logged_in:
-#     st.title("💬 Legal Assistant Chat")
-
-#     # Initialize chat history
-#     if "chat_history" not in st.session_state:
-#         st.session_state.chat_history = []
-
-#     # Display past messages
-#     for msg in st.session_state.chat_history:
-#         with st.chat_message(msg["role"]):
-#             st.markdown(msg["content"])
-
-#     # --- Chat input ---
-#     user_q = st.chat_input("Ask a legal question...")
-#     if user_q:
-#         # Save user query
-#         st.session_state.chat_history.append({"role": "user", "content": user_q})
-
-#         # ✅ Immediately display the user’s message
-#         with st.chat_message("user"):
-#             st.markdown(user_q)
-
-#         # Step 1: Get responses from both agents
-#         general_reply = get_hybrid_response(user_q, st.session_state.chat_history)
-#         casefile_reply = get_casefile_response(user_q, st.session_state.chat_history)
-
-#         # Step 2: Merge them with merger agent
-#         reply = get_merged_response(
-#             user_q,
-#             general_reply,
-#             casefile_reply,
-#         )
-
-#         # Save assistant reply
-#         st.session_state.chat_history.append({"role": "assistant", "content": reply})
-
-#         # Display assistant reply
-#         with st.chat_message("assistant"):
-#             st.markdown(reply)
-
-#         # --- Footer disclaimer ---
-#         st.markdown("---")
-#         st.caption(
-#             "⚠️ Disclaimer: This assistant provides information for educational purposes only. "
-#             "It is not a substitute for professional legal advice."
-#         )
-
 import streamlit as st
+import random
 from dotenv import load_dotenv
-
 from rag_pipeline import get_hybrid_response  
 from case_agent import get_casefile_response  
 from merge_agent import get_merged_response  
+
+# For browser geolocation
+from streamlit_js_eval import streamlit_js_eval
 
 load_dotenv()
 
@@ -160,29 +18,26 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = ""
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+if "chat_sessions" not in st.session_state:  # multiple sessions
+    st.session_state.chat_sessions = {"Session 1": []}
+if "current_session" not in st.session_state:
+    st.session_state.current_session = "Session 1"
+if "show_lawyers" not in st.session_state:
+    st.session_state.show_lawyers = False
 
 # --- Full-page login with Streamlit image ---
 if not st.session_state.logged_in:
-    # Show background image (fills width)
-    st.image("images/background.jpg", use_column_width=True)
-
-    # Create empty space before login box (to center vertically a bit)
+    st.image("images/background.jpg", use_container_width=False)
     st.write("\n" * 5)
-
-    # Center login box horizontally
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.subheader("🔑 Login")
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
-
         if st.button("Login"):
-            if username and password:  # replace with real authentication
+            if username and password:
                 st.session_state.logged_in = True
                 st.session_state.username = username
-                st.success(f"Welcome, {username}!")
                 st.rerun()
             else:
                 st.error("Enter username and password.")
@@ -191,52 +46,126 @@ if not st.session_state.logged_in:
 if st.session_state.logged_in:
     st.title(f"💬 Legal Assistant Chat - Logged in as {st.session_state.username}")
 
-    # Sidebar for chat history
+    # Sidebar: Sessions + Pro Bono Finder
     with st.sidebar:
-        st.header("📜 Chat History")
-        if st.session_state.chat_history:
-            for i, msg in enumerate(st.session_state.chat_history):
-                role = "👤 User" if msg["role"] == "user" else "🤖 Assistant"
-                st.markdown(f"**{role}:** {msg['content']}")
-        else:
-            st.caption("No history yet.")
+        st.header("📂 Chat Sessions")
+
+        # Create new session
+        if st.button("➕ New Session"):
+            new_name = f"Session {len(st.session_state.chat_sessions) + 1}"
+            st.session_state.chat_sessions[new_name] = []
+            st.session_state.current_session = new_name
+
+        # Select session
+        session_names = list(st.session_state.chat_sessions.keys())
+        selected = st.selectbox(
+            "Choose a session",
+            session_names,
+            index=session_names.index(st.session_state.current_session)
+        )
+        st.session_state.current_session = selected
 
         if st.button("Logout"):
             st.session_state.logged_in = False
             st.session_state.username = ""
-            st.session_state.chat_history = []
+            st.session_state.chat_sessions = {"Session 1": []}
+            st.session_state.current_session = "Session 1"
+            st.session_state.show_lawyers = False
             st.rerun()
 
-    # Display past messages in chat UI
-    for msg in st.session_state.chat_history:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+        st.markdown("---")
+        st.subheader("📍 Pro Bono Lawyer Finder")
+        if st.button("Find Pro Bono Lawyers"):
+            st.session_state.show_lawyers = True
+
+    # Current session history
+    current_history = st.session_state.chat_sessions[st.session_state.current_session]
+
+    # --- Display chat history (main section only) ---
+    if current_history:
+        for msg in current_history:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
+    else:
+        st.info("This session has no messages yet. Start chatting below 👇")
+
+    # --- Helper Functions for Pro Bono Locator ---
+    LEGAL_KEYWORDS = {
+        "Eviction": "tenant lawyer, housing lawyer, eviction lawyer",
+        "Maintenance": "child support lawyer, family law lawyer",
+        "Divorce": "divorce lawyer, family law lawyer",
+        "General": "pro bono lawyer"
+    }
+
+    def generate_dummy_lawyers(lat: float, lng: float, legal_issue: str = "General"):
+        """Generate fake nearby lawyers without using Google Maps API."""
+        sample_names = {
+            "Eviction": ["Tenant Rights SA", "Housing Justice Center", "Eviction Aid Clinic"],
+            "Maintenance": ["Family Care Legal Aid", "Child Support SA", "Custody Help Desk"],
+            "Divorce": ["Divorce Mediation SA", "Family Law Pro Bono", "Separation Support Lawyers"],
+            "General": ["Community Legal Aid", "Justice for All Foundation", "Free Legal Support SA"]
+        }
+        names = sample_names.get(legal_issue, sample_names["General"])
+
+        lawyers = []
+        for i in range(3):  # 3 random results
+            lawyers.append({
+                "name": random.choice(names),
+                "address": f"Street {random.randint(1,99)}, Local Area",
+                "lat": lat + random.uniform(-0.01, 0.01),
+                "lng": lng + random.uniform(-0.01, 0.01)
+            })
+        return lawyers
+
+    def format_lawyers_list(lawyers):
+        if not lawyers:
+            return "Sorry, no pro bono lawyers found nearby for your case."
+        message = "Here are some pro bono lawyers near you:\n\n"
+        for i, lawyer in enumerate(lawyers, 1):
+            message += f"{i}. {lawyer['name']}, {lawyer['address']}\n"
+        return message
+
+    # --- Pro Bono Finder Section ---
+    if st.session_state.show_lawyers:
+        st.info("We will use your location to find the nearest pro bono lawyers.")
+        legal_issue = st.selectbox("Select Legal Issue", options=list(LEGAL_KEYWORDS.keys()))
+
+        # Get user location from browser
+        location = streamlit_js_eval(
+            js_expressions="navigator.geolocation.getCurrentPosition(pos => pos.coords)",
+            key="lawyer_location",
+            default=None
+        )
+
+        if location:
+            lat, lng = location["latitude"], location["longitude"]
+
+            # Generate dummy lawyers
+            lawyers = generate_dummy_lawyers(lat, lng, legal_issue)
+            reply = format_lawyers_list(lawyers)
+
+            current_history.append({"role": "assistant", "content": reply})
+            with st.chat_message("assistant"):
+                st.markdown(reply)
+
+            if lawyers:
+                st.map([[l["lat"], l["lng"]] for l in lawyers])
+        else:
+            st.warning("Could not get your location. Please allow location access in your browser.")
 
     # --- Chat input ---
     user_q = st.chat_input("Ask a legal question...")
     if user_q:
-        # Save user query
-        st.session_state.chat_history.append({"role": "user", "content": user_q})
-
-        # ✅ Immediately display the user’s message
+        current_history.append({"role": "user", "content": user_q})
         with st.chat_message("user"):
             st.markdown(user_q)
 
-        # Step 1: Get responses from both agents
-        general_reply = get_hybrid_response(user_q, st.session_state.chat_history)
-        casefile_reply = get_casefile_response(user_q, st.session_state.chat_history)
+        # Normal AI responses
+        general_reply = get_hybrid_response(user_q, current_history)
+        casefile_reply = get_casefile_response(user_q, current_history)
+        reply = get_merged_response(user_q, general_reply, casefile_reply)
 
-        # Step 2: Merge them with merger agent
-        reply = get_merged_response(
-            user_q,
-            general_reply,
-            casefile_reply,
-        )
-
-        # Save assistant reply
-        st.session_state.chat_history.append({"role": "assistant", "content": reply})
-
-        # Display assistant reply
+        current_history.append({"role": "assistant", "content": reply})
         with st.chat_message("assistant"):
             st.markdown(reply)
 

@@ -1,0 +1,18 @@
+{
+    "Eviction": [
+        {"name": "Tenant Rights SA", "address": "Street 12, Local Area", "lat": -26.2, "lng": 28.03},
+        {"name": "Housing Justice Center", "address": "Street 34, Local Area", "lat": -26.21, "lng": 28.05}
+    ],
+    "Maintenance": [
+        {"name": "Family Care Legal Aid", "address": "Street 45, Local Area", "lat": -26.22, "lng": 28.06},
+        {"name": "Child Support SA", "address": "Street 67, Local Area", "lat": -26.23, "lng": 28.04}
+    ],
+    "Divorce": [
+        {"name": "Divorce Mediation SA", "address": "Street 78, Local Area", "lat": -26.24, "lng": 28.07},
+        {"name": "Family Law Pro Bono", "address": "Street 89, Local Area", "lat": -26.25, "lng": 28.02}
+    ],
+    "General": [
+        {"name": "Community Legal Aid", "address": "Street 1, Local Area", "lat": -26.26, "lng": 28.01},
+        {"name": "Justice for All Foundation", "address": "Street 2, Local Area", "lat": -26.27, "lng": 28.03}
+    ]
+}

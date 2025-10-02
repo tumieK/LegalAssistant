@@ -161,7 +161,12 @@ def index_documents_in_folder(folder: str = DOCS_DIR):
 
 # ---------- Hybrid response (RAG first, fallback to direct chat) ---------- #
 # --------------------------------------------------------------------------- #
-def get_hybrid_response(question: str, full_history: List[dict]) -> str:
+def get_hybrid_response(question: str, full_history: List[dict], model_name: str = "gpt-4o-mini") -> str:
+    chat_llm = ChatOpenAI(
+        openai_api_key=OPENAI_API_KEY,
+        model_name=model_name,
+        temperature=0.0
+    )
     """
     Attempt to answer using the RAG chain. If the RAG answer is empty or too short,
     do a direct ChatOpenAI call using recent chat history as context.

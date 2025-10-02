@@ -1,15 +1,21 @@
 from dotenv import load_dotenv
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
+import os
 
 load_dotenv()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-llm = ChatOpenAI(model_name="gpt-4", temperature=0)
-
-def get_merged_response(user_q, general_reply, casefile_reply):
+def get_merged_response(user_q, general_reply, casefile_reply, model_name="gpt-4o-mini"):
     """
     Merge responses from general legal docs and casefiles into one coherent answer.
     """
+    llm = ChatOpenAI(
+        openai_api_key=OPENAI_API_KEY,
+        model_name=model_name,
+        temperature=0.0
+    )
+
     prompt = ChatPromptTemplate.from_template("""
     You are a legal assistant tasked with merging two sources of information.
 

@@ -1,9 +1,38 @@
 {
   "Eviction": [
-    {"name": "Tenant Rights SA", "address": "Street 12, City", "lat": -26.2041, "lon": 28.0473},
-    {"name": "Housing Justice Center", "address": "Street 45, City", "lat": -26.2050, "lon": 28.0490}
+    {
+      "name": "Tenant Rights SA",
+      "address": "Street 12, City",
+      "lat": -26.2041,
+      "lon": 28.0473
+    },
+    {
+      "name": "Housing Justice Center",
+      "address": "Street 45, City",
+      "lat": -26.205,
+      "lon": 28.049
+    }
   ],
   "Divorce": [
-    {"name": "Family Care Legal Aid", "address": "Street 5, City", "lat": -26.2100, "lon": 28.0500}
+    {
+      "name": "Family Care Legal Aid",
+      "address": "Street 5, City",
+      "lat": -26.21,
+      "lon": 28.05
+    }
+  ],
+  "General": [
+    {
+      "name": "karabelo moloi",
+      "address": "54 Groenewound Bloemfontein, Universitas",
+      "lat": 0.0,
+      "lng": 0.0
+    },
+    {
+      "name": "keke",
+      "address": "5 stevens street, bloemfontein universitas",
+      "lat": 0.0,
+      "lng": 0.0
+    }
   ]
 }

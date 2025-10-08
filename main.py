@@ -77,6 +77,9 @@ if not st.session_state.logged_in:
         else:  # --- Registration ---
             st.subheader("📝 Register New Account")
             role = st.selectbox("I am a...", ["User", "Lawyer"])
+            specialisation = st.selectbox(
+            "Select your legal specialisation",
+            ["Eviction", "Divorce"] ) 
             new_username = st.text_input("Choose a Username")
             new_password = st.text_input("Choose a Password", type="password")
 

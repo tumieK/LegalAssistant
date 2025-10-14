@@ -27,6 +27,13 @@
       "address": "Bloemfontein",
       "lat": -29.116395,
       "lon": 26.215496
+    },
+    {
+      "name": "Bonnie",
+      "address": "54 Groenewound Street, Universitas, Bloemfontein",
+      "cell": "+27 82 123 4567",
+      "lat": -29.1211111,
+      "lon": 26.185
     }
   ]
 }

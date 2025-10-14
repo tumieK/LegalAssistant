@@ -161,73 +161,210 @@ def index_documents_in_folder(folder: str = DOCS_DIR):
 
 # ---------- Hybrid response (RAG first, fallback to direct chat) ---------- #
 # --------------------------------------------------------------------------- #
-def get_hybrid_response(question: str, full_history: List[dict], model_name: str = "gpt-4o-mini") -> str:
+# def get_hybrid_response(question: str, full_history: List[dict], model_name: str = "gpt-4o-mini") -> str:
     
+#     """
+#     Attempt to answer using the RAG chain. If the RAG answer is empty or too short,
+#     do a direct ChatOpenAI call using recent chat history as context.
+#     """
+#     try:
+#         lc_history = convert_history_to_tuples(full_history)
+
+#         # LangChain RAG expects chat_history as list of tuples (user, assistant)
+#         # Call the chain:
+#         resp = qa_chain.invoke({"question": question, "chat_history": lc_history})
+#         answer = (resp.get("answer") or "").strip()
+#         source_docs = resp.get("source_documents", [])
+
+#         # If RAG returned a meaningful answer, include sources and return
+#         if answer and len(answer.split()) > 6:
+#             if source_docs:
+#                 sources = []
+#                 for d in source_docs:
+#                     src = None
+#                     # metadata may differ depending on how it was added
+#                     if hasattr(d, "metadata"):
+#                         src = d.metadata.get("source")
+#                     elif isinstance(d, dict):
+#                         src = d.get("metadata", {}).get("source")
+#                     if src:
+#                         if src not in sources:
+#                             sources.append(src)
+#                 if sources:
+#                     answer += "\n\n**Sources:** " + ", ".join(sources[:6])
+#             return answer
+
+#         # Fallback: call ChatOpenAI directly with brief system prompt + last 6 user/assistant turns
+#         chat_llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model_name=CHAT_MODEL, temperature=0.0)
+#         system_prompt = (
+#             "You are LegalBot, an expert AI assistant specialized in South African law. "
+#             "Your focus areas are eviction, rent disputes, substandard housing, family law, divorce, child custody, "
+#              "and child support. "
+#             "Provide answers that are concise, accurate, professional, and written in plain, understandable language. "
+#             "Do NOT reference the source documents or say 'in this document'. "
+#             "If you do not have enough information to answer the question reliably, respond with: "
+#             "'I'm still learning and do not have sufficient data regarding your question. Please consult official legal resources.' "
+#             "Always base your answers on South African law. "
+#             "Avoid uncertain language such as 'might', 'maybe', 'could', or 'would'. "
+#             "Do not provide legal advice outside the specified areas."
+#         )
+
+#         # Build messages for fallback (OpenAI-style list of dicts)
+#         messages = [{"role": "system", "content": system_prompt}]
+#         # include last up to 6 turns from session history
+#         recent = full_history[-6:]
+#         for m in recent:
+#             messages.append({"role": m["role"], "content": m["content"]})
+#         # include current question
+#         messages.append({"role": "user", "content": question})
+
+#         # Use the underlying ChatOpenAI client to get the answer (ChatOpenAI is callable and returns a LangChain Message)
+#         # But easiest: call ChatOpenAI directly via its 'generate' or call interface.
+#         llm_response = chat_llm.invoke(messages)  # returns an object with .content
+#         # llm_response here is an AI message object (LangChain ChatMessage)
+#         fallback_answer = llm_response.content if hasattr(llm_response, "content") else str(llm_response)
+#         return fallback_answer
+
+#     except Exception as e:
+#         logging.exception(f"Hybrid response failed: {e}")
+#         return "⚠️ Sorry — there was an internal error while processing your request."
+
+
+# def get_hybrid_response(question: str, full_history: List[dict], model_name: str = "gpt-4o-mini") -> str:
+#     """
+#     Attempt to answer using the RAG chain first. If the RAG answer is empty or too short,
+#     fallback to a direct ChatOpenAI call using recent chat history as context.
+#     Always append a Sources section:
+#       - If documents are found, list their filenames.
+#       - If no documents, note that the answer is based on AI training knowledge.
+#     """
+#     try:
+#         lc_history = convert_history_to_tuples(full_history)
+
+#         # Call the RAG chain
+#         resp = qa_chain.invoke({"question": question, "chat_history": lc_history})
+#         answer = (resp.get("answer") or "").strip()
+#         source_docs = resp.get("source_documents", [])
+
+#         # --- Handle RAG answer ---
+#         if answer and len(answer.split()) > 6:
+#             sources = []
+#             if source_docs:
+#                 for d in source_docs:
+#                     src = None
+#                     if hasattr(d, "metadata"):
+#                         src = d.metadata.get("source")
+#                     elif isinstance(d, dict):
+#                         src = d.get("metadata", {}).get("source")
+#                     if src and src not in sources:
+#                         sources.append(src)
+#             if sources:
+#                 answer += "\n\n**Sources:** " + ", ".join(sources[:6])
+#             else:
+#                 answer += "\n\n**Source:** Based on knowledge learned during AI training"
+#             return answer
+
+#         # --- Fallback: direct ChatOpenAI ---
+#         chat_llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model_name=model_name, temperature=0.0)
+#         system_prompt = (
+#             "You are LegalBot, an expert AI assistant specialized in South African law. "
+#             "Your focus areas are eviction, rent disputes, substandard housing, family law, divorce, child custody, "
+#             "and child support. "
+#             "Provide concise, accurate, professional answers in plain, understandable language. "
+#             "If you do not have enough information to answer the question reliably, respond with: "
+#             "'I'm still learning and do not have sufficient data regarding your question. Please consult official legal resources.' "
+#             "Always base your answers on South African law. "
+#             "Avoid uncertain language such as 'might', 'maybe', 'could', or 'would'. "
+#             "Do not provide legal advice outside the specified areas."
+#         )
+
+#         # Build messages
+#         messages = [{"role": "system", "content": system_prompt}]
+#         recent = full_history[-6:]  # include last up to 6 messages
+#         for m in recent:
+#             messages.append({"role": m["role"], "content": m["content"]})
+#         messages.append({"role": "user", "content": question})
+
+#         llm_response = chat_llm.invoke(messages)  # returns object with .content
+#         fallback_answer = llm_response.content if hasattr(llm_response, "content") else str(llm_response)
+
+#         # Append fallback source
+#         fallback_answer += "\n\n**Source:** Based on knowledge learned during AI training"
+
+#         return fallback_answer
+
+#     except Exception as e:
+#         logging.exception(f"Hybrid response failed: {e}")
+#         return "⚠️ Sorry — there was an internal error while processing your request."
+
+def get_hybrid_response(question: str, full_history: List[dict], model_name: str = "gpt-4o-mini") -> str:
     """
     Attempt to answer using the RAG chain. If the RAG answer is empty or too short,
     do a direct ChatOpenAI call using recent chat history as context.
+    Always append a Sources section — either from retrieved docs or model training.
     """
     try:
         lc_history = convert_history_to_tuples(full_history)
 
-        # LangChain RAG expects chat_history as list of tuples (user, assistant)
-        # Call the chain:
+        # 1️⃣ Try the RAG pipeline first
         resp = qa_chain.invoke({"question": question, "chat_history": lc_history})
         answer = (resp.get("answer") or "").strip()
         source_docs = resp.get("source_documents", [])
 
-        # If RAG returned a meaningful answer, include sources and return
+        # 2️⃣ If RAG produced a meaningful answer
         if answer and len(answer.split()) > 6:
-            if source_docs:
-                sources = []
-                for d in source_docs:
-                    src = None
-                    # metadata may differ depending on how it was added
-                    if hasattr(d, "metadata"):
-                        src = d.metadata.get("source")
-                    elif isinstance(d, dict):
-                        src = d.get("metadata", {}).get("source")
-                    if src:
-                        if src not in sources:
-                            sources.append(src)
-                if sources:
-                    answer += "\n\n**Sources:** " + ", ".join(sources[:6])
+            sources = []
+            for d in source_docs:
+                src = None
+                if hasattr(d, "metadata"):
+                    src = d.metadata.get("source")
+                elif isinstance(d, dict):
+                    src = d.get("metadata", {}).get("source")
+                if src and src not in sources:
+                    sources.append(src)
+
+            if sources:
+                answer += "\n\n**Sources:** " + ", ".join(sources[:6])
+            else:
+                answer += "\n\n**Source:** Based on LegalBot’s trained understanding of South African law."
+
             return answer
 
-        # Fallback: call ChatOpenAI directly with brief system prompt + last 6 user/assistant turns
-        chat_llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model_name=CHAT_MODEL, temperature=0.0)
+        # 3️⃣ Fallback: direct model (no docs)
+        chat_llm = ChatOpenAI(
+            openai_api_key=OPENAI_API_KEY,
+            model_name=CHAT_MODEL,
+            temperature=0.0
+        )
+
         system_prompt = (
             "You are LegalBot, an expert AI assistant specialized in South African law. "
             "Your focus areas are eviction, rent disputes, substandard housing, family law, divorce, child custody, "
-             "and child support. "
+            "and child support. "
             "Provide answers that are concise, accurate, professional, and written in plain, understandable language. "
-            "Do NOT reference the source documents or say 'in this document'. "
-            "If you do not have enough information to answer the question reliably, respond with: "
+            "If you do not have enough information, respond with: "
             "'I'm still learning and do not have sufficient data regarding your question. Please consult official legal resources.' "
-            "Always base your answers on South African law. "
-            "Avoid uncertain language such as 'might', 'maybe', 'could', or 'would'. "
-            "Do not provide legal advice outside the specified areas."
+            "Always base your answers on South African law and never reference source documents."
         )
 
-        # Build messages for fallback (OpenAI-style list of dicts)
         messages = [{"role": "system", "content": system_prompt}]
-        # include last up to 6 turns from session history
         recent = full_history[-6:]
         for m in recent:
             messages.append({"role": m["role"], "content": m["content"]})
-        # include current question
         messages.append({"role": "user", "content": question})
 
-        # Use the underlying ChatOpenAI client to get the answer (ChatOpenAI is callable and returns a LangChain Message)
-        # But easiest: call ChatOpenAI directly via its 'generate' or call interface.
-        llm_response = chat_llm.invoke(messages)  # returns an object with .content
-        # llm_response here is an AI message object (LangChain ChatMessage)
+        llm_response = chat_llm.invoke(messages)
         fallback_answer = llm_response.content if hasattr(llm_response, "content") else str(llm_response)
+
+        # Always add a fallback source note
+        fallback_answer += "\n\n**Source:** Based on LegalBot’s training and general understanding of South African law."
+
         return fallback_answer
 
     except Exception as e:
         logging.exception(f"Hybrid response failed: {e}")
         return "⚠️ Sorry — there was an internal error while processing your request."
+
 
 # ---------- Streamlit UI ------------------------------------------------#
 # ------------------------------------------------------------------------ #

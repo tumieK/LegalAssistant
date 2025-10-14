@@ -23,16 +23,17 @@
   ],
   "General": [
     {
-      "name": "karabelo moloi",
-      "address": "54 Groenewound Bloemfontein, Universitas",
-      "lat": 0.0,
-      "lng": 0.0
+      "name": "Bambi",
+      "address": "Bloemfontein",
+      "lat": -29.116395,
+      "lon": 26.215496
     },
     {
-      "name": "keke",
-      "address": "5 stevens street, bloemfontein universitas",
-      "lat": 0.0,
-      "lng": 0.0
+      "name": "Bonnie",
+      "address": "54 Groenewound Street, Universitas, Bloemfontein",
+      "cell": "+27 82 123 4567",
+      "lat": -29.1211111,
+      "lon": 26.185
     }
   ]
 }

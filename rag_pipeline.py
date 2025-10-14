@@ -220,7 +220,7 @@ def get_hybrid_response(question: str, full_history: List[dict], model_name: str
 
         # Use the underlying ChatOpenAI client to get the answer (ChatOpenAI is callable and returns a LangChain Message)
         # But easiest: call ChatOpenAI directly via its 'generate' or call interface.
-        llm_response = chat_llm(messages)  # returns an object with .content
+        llm_response = chat_llm.invoke(messages)  # returns an object with .content
         # llm_response here is an AI message object (LangChain ChatMessage)
         fallback_answer = llm_response.content if hasattr(llm_response, "content") else str(llm_response)
         return fallback_answer

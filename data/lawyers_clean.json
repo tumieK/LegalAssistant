@@ -1,0 +1,32 @@
+{
+  "Eviction": [
+    {
+      "name": "Tenant Rights SA",
+      "address": "Street 12, City",
+      "lat": -26.2041,
+      "lon": 28.0473
+    },
+    {
+      "name": "Housing Justice Center",
+      "address": "Street 45, City",
+      "lat": -26.205,
+      "lon": 28.049
+    }
+  ],
+  "Divorce": [
+    {
+      "name": "Family Care Legal Aid",
+      "address": "Street 5, City",
+      "lat": -26.21,
+      "lon": 28.05
+    }
+  ],
+  "General": [
+    {
+      "name": "Bambi",
+      "address": "Bloemfontein",
+      "lat": -29.116395,
+      "lon": 26.215496
+    }
+  ]
+}

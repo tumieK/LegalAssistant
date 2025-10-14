@@ -8,7 +8,6 @@ import streamlit as st #Web app framework
 import openai #Calls OpenAI API for embedding and chat responses
 
 # API Key
-OPENAI_API_KEY = "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"
 openai.api_key = OPENAI_API_KEY
 
 #chroma persistance= None

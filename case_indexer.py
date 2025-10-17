@@ -11,9 +11,7 @@ import pytesseract
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_chroma import Chroma
 
-# -----------------------------------------------------------
-# CONFIGURATION
-# -----------------------------------------------------------
+
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -28,9 +26,7 @@ CHAT_MODEL = "gpt-4o-mini"
 
 logging.basicConfig(level=logging.INFO)
 
-# -----------------------------------------------------------
-# TEXT EXTRACTION
-# -----------------------------------------------------------
+
 def extract_text_from_pdf(path: str) -> str:
     """Try normal PDF text extraction first, then OCR if needed."""
     try:
@@ -41,10 +37,10 @@ def extract_text_from_pdf(path: str) -> str:
             if txt:
                 text_parts.append(txt)
 
-        if text_parts:  # ✅ Text layer found
+        if text_parts:  
             return "\n".join(text_parts).strip()
 
-        # 🧠 If no text found, fallback to OCR
+
         logging.info(f"OCR processing {path} (no text layer found)")
         ocr_text = []
         with fitz.open(path) as doc:
@@ -94,9 +90,7 @@ def summarize_text(text: str, llm: ChatOpenAI) -> str:
         return f"[Summary generation failed: {e}]"
 
 
-# -----------------------------------------------------------
-# INDEXING FUNCTION
-# -----------------------------------------------------------
+
 def index_casefiles(case_dir: str = CASEFILES_DIR,
                     summary_dir: str = CASE_SUMMARY_DB,
                     raw_dir: str = CASE_RAW_DB):
@@ -127,12 +121,11 @@ def index_casefiles(case_dir: str = CASEFILES_DIR,
                 logging.warning(f"{fname} is empty even after OCR, skipping")
                 continue
 
-            # ✅ 1) Add raw chunks to raw_db
             chunks = chunk_text_simple(raw_text, max_chars=2000)
             metadatas = [{"source": fname, "type": "raw", "chunk_index": i} for i in range(len(chunks))]
             raw_db.add_texts(texts=chunks, metadatas=metadatas)
 
-            # ✅ 2) Generate summary
+
             summary = summarize_text(raw_text, llm)
             summary_db.add_texts(texts=[summary], metadatas=[{"source": fname, "type": "summary"}])
 
@@ -144,8 +137,6 @@ def index_casefiles(case_dir: str = CASEFILES_DIR,
     print(f"\n✅ Indexing complete.\nRaw DB: {raw_dir}\nSummary DB: {summary_dir}")
 
 
-# -----------------------------------------------------------
-# MAIN ENTRY POINT
-# -----------------------------------------------------------
+
 if __name__ == "__main__":
     index_casefiles()

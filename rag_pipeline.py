@@ -5,15 +5,14 @@ from typing import List, Tuple
 import streamlit as st
 from dotenv import load_dotenv
 from pypdf import PdfReader
-import sqlite3  # built-in
+import sqlite3  
 
-# ---- LangChain + Chroma + OpenAI Imports ---- #
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_chroma import Chroma
 from langchain.chains import ConversationalRetrievalChain
 from langchain.retrievers import EnsembleRetriever
 
-# ---------- Config / Environment ---------- #
+
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
@@ -21,15 +20,15 @@ if not OPENAI_API_KEY:
 
 HISTORY_FILE = "chat_history.json"
 DOCS_DIR = "./LegalDocs"
-CHROMA_DIR = "./chroma_db"  # default doc index (used for Streamlit uploads)
-CASE_SUMMARY_DB = "./chroma_case_summary"  # prebuilt summary DB
-CASE_RAW_DB = "./chroma_case_raw"          # prebuilt full-text DB
+CHROMA_DIR = "./chroma_db"  
+CASE_SUMMARY_DB = "./chroma_case_summary" 
+CASE_RAW_DB = "./chroma_case_raw"          
 
 EMBED_MODEL = "text-embedding-3-small"
 CHAT_MODEL = "gpt-4o-mini"
 TOP_K = 4
 
-# ---------- Save / Load Chat History ---------- #
+
 def save_chat_history(history: List[dict]):
     with open(HISTORY_FILE, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
@@ -40,12 +39,12 @@ def load_chat_history() -> List[dict]:
             return json.load(f)
     return []
 
-# ---------- PDF Text Extraction ---------- #
+
 def extract_text_from_pdf(path: str) -> str:
     reader = PdfReader(path)
     return "\n".join(page.extract_text() or "" for page in reader.pages).strip()
 
-# ---------- Simple Text Chunking ---------- #
+
 def chunk_text_simple(text: str, max_chars: int = 2500) -> List[str]:
     if not text:
         return []
@@ -61,7 +60,7 @@ def chunk_text_simple(text: str, max_chars: int = 2500) -> List[str]:
         parts.append(cur.strip())
     return parts
 
-# ---------- History Conversion ---------- #
+
 def convert_history_to_tuples(history: List[dict]) -> List[Tuple[str, str]]:
     pairs, pending_user = [], None
     for msg in history:
@@ -73,13 +72,13 @@ def convert_history_to_tuples(history: List[dict]) -> List[Tuple[str, str]]:
             pending_user = None
     return pairs
 
-# ---------- Vector DB and RAG Chain ---------- #
+
 @st.cache_resource(show_spinner=False)
 def get_vectordb_and_chain():
     """Combine both summary + raw Chroma DBs for hybrid retrieval."""
     embeddings = OpenAIEmbeddings(model=EMBED_MODEL, openai_api_key=OPENAI_API_KEY)
 
-    # Load available databases
+    
     retrievers = []
     weights = []
 
@@ -95,20 +94,20 @@ def get_vectordb_and_chain():
         weights.append(0.3)
         print("✅ Loaded raw database")
 
-    # fallback to default upload DB if nothing else exists
+   
     if not retrievers:
         vectordb = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
         retrievers.append(vectordb.as_retriever(search_kwargs={"k": TOP_K}))
         weights.append(1.0)
         print("⚠️ Using default document DB only (no summary/raw DBs found)")
 
-    # Combine multiple retrievers
+    
     if len(retrievers) > 1:
         combined_retriever = EnsembleRetriever(retrievers=retrievers, weights=weights)
     else:
         combined_retriever = retrievers[0]
 
-    # LLM setup
+    
     llm = ChatOpenAI(
         openai_api_key=OPENAI_API_KEY,
         model_name=CHAT_MODEL,
@@ -126,7 +125,7 @@ def get_vectordb_and_chain():
 
 retriever, qa_chain = get_vectordb_and_chain()
 
-# ---------- Index Documents (for Streamlit uploads) ---------- #
+
 def index_documents_in_folder(folder: str = DOCS_DIR):
     os.makedirs(folder, exist_ok=True)
     for fname in os.listdir(folder):
@@ -156,12 +155,12 @@ def index_documents_in_folder(folder: str = DOCS_DIR):
         except Exception as e:
             logging.exception(f"Indexing failed for {fname}: {e}")
 
-# ---------- Hybrid RAG Response ---------- #
+
 def get_hybrid_response(question: str, full_history: List[dict], model_name: str = CHAT_MODEL) -> str:
     try:
         lc_history = convert_history_to_tuples(full_history)
 
-        # --- Step 1: Try RAG ---
+        
         resp = qa_chain.invoke({"question": question, "chat_history": lc_history})
         answer = (resp.get("answer") or "").strip()
         source_docs = resp.get("source_documents", [])
@@ -183,7 +182,7 @@ def get_hybrid_response(question: str, full_history: List[dict], model_name: str
                 answer += "\n\n**Source:** Based on LegalBot’s trained understanding of South African law."
             return answer
 
-        # --- Step 2: Fallback direct model ---
+        
         chat_llm = ChatOpenAI(
             openai_api_key=OPENAI_API_KEY,
             model_name=model_name,
@@ -209,7 +208,7 @@ def get_hybrid_response(question: str, full_history: List[dict], model_name: str
         logging.exception(f"Hybrid response failed: {e}")
         return "⚠️ Internal error while processing your request."
 
-# ---------- Streamlit UI ---------- #
+
 def run_chatbot():
     st.set_page_config(page_title="Legal AI Chatbot (RAG)", layout="wide")
     st.title("⚖️ Legal AI Chatbot (Dual-RAG)")

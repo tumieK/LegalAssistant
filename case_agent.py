@@ -1,6 +1,3 @@
-# case_agent.py
-# Retrieval + Answer generation + Self-evaluation for casefiles DBs.
-
 import os
 from typing import List, Tuple
 from dotenv import load_dotenv
@@ -18,7 +15,6 @@ CASE_RAW_DB = "./chroma_case_raw"
 EMBED_MODEL = "text-embedding-3-small"
 CHAT_MODEL = "gpt-4o-mini"
 
-# System prompt for answer generation (customize further as needed)
 SYSTEM_PROMPT = (
     "You are LegalBot (Casefiles). Use the provided context (summaries and raw text) strictly to answer questions "
     "about South African law, focusing on eviction, family law, custody, and related areas. "
@@ -36,13 +32,11 @@ def _retrieve(question: str, k_summary: int = 3, k_raw: int = 3):
     summary_db, raw_db = _get_dbs()
     summaries = summary_db.similarity_search(question, k=k_summary) if summary_db else []
     raw_chunks = raw_db.similarity_search(question, k=k_raw) if raw_db else []
-    # results are list of Document objects (langchain). We'll return text and metadata.
     return summaries, raw_chunks
 
 def _build_context_text(summaries, raw_chunks, max_chars=6000) -> str:
     parts = []
     total = 0
-    # prefer summaries first for concise context
     for doc in summaries:
         txt = getattr(doc, "page_content", str(doc))
         if total + len(txt) > max_chars:
@@ -53,7 +47,6 @@ def _build_context_text(summaries, raw_chunks, max_chars=6000) -> str:
         txt = getattr(doc, "page_content", str(doc))
         if total + len(txt) > max_chars:
             break
-        # include source metadata if present
         meta = getattr(doc, "metadata", {}) or {}
         src = meta.get("source", "")
         parts.append(f"[RAW - {src}] {txt}")
@@ -63,7 +56,7 @@ def _build_context_text(summaries, raw_chunks, max_chars=6000) -> str:
 def _call_llm(prompt_text: str) -> str:
     llm = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model_name=CHAT_MODEL, temperature=0.0)
     try:
-        out = llm.invoke(prompt_text)  # AIMessage
+        out = llm.invoke(prompt_text)  
         return out.content.strip()
     except Exception:
         out_obj = llm([{"role": "user", "content": prompt_text}])
@@ -76,7 +69,6 @@ def _evaluator_check(question: str, draft_answer: str, sources: List[str]) -> Tu
     """
     Run a quick overlap heuristic then ask an LLM evaluator. Returns (is_valid, explanation).
     """
-    # quick heuristic: check if draft_answer mentions important terms present in sources
     joined_sources = "\n\n".join(sources)[:8000]
     eval_prompt = (
         "You are an evaluator. Determine whether the ANSWER is supported by the SOURCE TEXTS and whether it answers "
@@ -88,7 +80,6 @@ def _evaluator_check(question: str, draft_answer: str, sources: List[str]) -> Tu
         "If the answer is speculative or not supported, reply 'INVALID'."
     )
     verdict = _call_llm(eval_prompt)
-    # parse first token
     v = verdict.strip().splitlines()[0].strip().upper()
     is_valid = v.startswith("VALID")
     explanation = "\n".join(verdict.strip().splitlines()[1:]).strip()
@@ -104,7 +95,6 @@ def get_casefile_response(question: str, chat_history: List[dict] = None) -> str
     if not summaries and not raw_chunks:
         return "I'm still learning and do not have sufficient data regarding your question. Please consult official legal resources."
 
-    # build context from summaries first, then raw chunks
     context = _build_context_text(summaries, raw_chunks, max_chars=6000)
 
     prompt_text = (
@@ -115,7 +105,6 @@ def get_casefile_response(question: str, chat_history: List[dict] = None) -> str
 
     draft = _call_llm(prompt_text)
 
-    # gather source texts for evaluation: use page_content and metadata source
     source_texts = []
     src_names = []
     for d in (summaries + raw_chunks):
@@ -134,7 +123,6 @@ def get_casefile_response(question: str, chat_history: List[dict] = None) -> str
     else:
         return "I'm still learning and do not have sufficient data regarding your question. Please consult official legal resources."
 
-# Example quick test
 if __name__ == "__main__":
     q = "What does South African law require for a lawful eviction?"
     print(get_casefile_response(q, chat_history=[]))

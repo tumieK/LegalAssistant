@@ -13,14 +13,14 @@ def geocode_address(address):
     params = {"q": address, "format": "json", "limit": 1}
 
     try:
-        # Try the full address first
+        
         resp = requests.get(url, params=params, headers=headers, timeout=10)
         data = resp.json()
         if data:
             lat, lon = float(data[0]["lat"]), float(data[0]["lon"])
             return lat, lon
 
-        # 🪄 Fallback 1: remove house number
+        
         parts = address.split(",")
         if len(parts) > 1:
             short_address = ", ".join(parts[1:])
@@ -31,7 +31,7 @@ def geocode_address(address):
                 lat, lon = float(data[0]["lat"]), float(data[0]["lon"])
                 return lat, lon
 
-        # 🪄 Fallback 2: city + province + country
+        
         if "Bloemfontein" in address:
             fallback = "Bloemfontein, Free State, South Africa"
             params["q"] = fallback

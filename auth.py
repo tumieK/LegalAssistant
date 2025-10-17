@@ -5,7 +5,7 @@ import os
 
 USER_DB = "users.json"
 
-# ---------- Utils ----------
+
 def hash_password(password: str) -> str:
     """Return SHA-256 hash of the password"""
     return hashlib.sha256(password.encode()).hexdigest()
@@ -20,7 +20,7 @@ def save_users(users):
     with open(USER_DB, "w") as f:
         json.dump(users, f, indent=2)
 
-# ---------- Auth Functions ----------
+
 def register_user(username, password, location):
     users = load_users()
     if username in users:
@@ -38,5 +38,5 @@ def login_user(username, password):
     users = load_users()
     user = users.get(username)
     if user and user["password"] == hash_password(password):
-        return True, user  # return user data too
+        return True, user  
     return False, None

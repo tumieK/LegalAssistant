@@ -1,4 +1,3 @@
-# test_case_agent.py
 from case_agent import get_casefile_response
 
 if __name__ == "__main__":

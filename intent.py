@@ -275,6 +275,6 @@ for message in st.session_state.chat_sessions[st.session_state.current_session]:
         st.markdown(message["content"])
 
 # --- Optional: Show recent context (debugging only) ---
-if st.checkbox("🔍 Show classification context (debug only)"):
-    ctx = st.session_state.chat_sessions[st.session_state.current_session][-3:]
-    st.code("\n".join([f"{m['role']}: {m['content']}" for m in ctx]))
+# if st.checkbox("🔍 Show classification context (debug only)"):
+#     ctx = st.session_state.chat_sessions[st.session_state.current_session][-3:]
+#     st.code("\n".join([f"{m['role']}: {m['content']}" for m in ctx]))
